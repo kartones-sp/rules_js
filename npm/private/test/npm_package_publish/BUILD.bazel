@@ -20,6 +20,29 @@ npm_package(
     publishable = True,
 )
 
+# Test pnpm publishing with publish_tool
+npm_package(
+    name = "pkg_pnpm",
+    srcs = [
+        "index.d.ts",
+        "index.js",
+        "package.json",
+    ],
+    publish_tool = "@pnpm//:pnpm",
+    publishable = True,
+)
+
+# Test pnpm publishing without package.json (should fail)
+npm_package(
+    name = "pkg_pnpm_no_package_json",
+    srcs = [
+        "index.d.ts",
+        "index.js",
+    ],
+    publish_tool = "@pnpm//:pnpm",
+    publishable = True,
+)
+
 sh_test(
     name = "test",
     srcs = ["test.sh"],
@@ -30,6 +53,23 @@ sh_test(
     data = [
         ":pkg_a.publish",
         ":pkg_b.publish",
+    ],
+    tags = [
+        "no-remote-exec",
+        "no-sandbox",
+    ],
+)
+
+sh_test(
+    name = "test_pnpm",
+    srcs = ["test_pnpm.sh"],
+    args = [
+        "$(locations :pkg_pnpm.publish)",
+        "$(locations :pkg_pnpm_no_package_json.publish)",
+    ],
+    data = [
+        ":pkg_pnpm.publish",
+        ":pkg_pnpm_no_package_json.publish",
     ],
     tags = [
         "no-remote-exec",

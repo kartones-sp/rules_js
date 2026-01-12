@@ -148,6 +148,7 @@ def npm_package(
         include_runfiles = False,
         hardlink = "auto",
         publishable = False,
+        publish_tool = None,
         verbose = False,
         **kwargs):
     """A macro that packages sources into a directory (a tree artifact) and provides an `NpmPackageInfo`.
@@ -155,7 +156,8 @@ def npm_package(
     This target can be used as the `src` attribute to `npm_link_package`.
 
     With `publishable = True` the macro also produces a target `[name].publish`, that can be run to publish to an npm registry.
-    Under the hood, this target runs `npm publish`. You can pass arguments to npm by escaping them from Bazel using a double-hyphen,
+    By default, this target runs `npm publish`. When `publish_tool` is specified, the provided tool is used instead
+    (e.g., pnpm). You can pass arguments to the publish command by escaping them from Bazel using a double-hyphen,
     for example: `bazel run //path/to:my_package.publish -- --tag=next`
 
     Files and directories can be arranged as needed in the output directory using
@@ -417,6 +419,21 @@ def npm_package(
 
         publishable: When True, enable generation of `{name}.publish` target
 
+        publish_tool: Optional label of a tool to use for publishing instead of npm.
+
+            When set, the specified tool binary will be invoked with `publish <package_dir>` as arguments.
+
+            For example, to publish with pnpm instead of npm:
+            ```starlark
+            npm_package(
+                name = "my_pkg",
+                publishable = True,
+                publish_tool = "@pnpm//:pnpm",
+            )
+            ```
+
+            The tool must accept the same publish arguments as npm (e.g., `--tag`, `--access`, `--dry-run`).
+
         verbose: If true, prints out verbose logs to stdout
 
         **kwargs: Additional attributes such as `tags` and `visibility`
@@ -447,14 +464,22 @@ def npm_package(
         srcs = srcs + [files_target]
 
     if publishable:
+        js_binary_data = [name]
+        js_binary_tool = "npm"
+        if publish_tool:
+            js_binary_tool = "$(rootpath {})".format(publish_tool)
+            js_binary_data = js_binary_data + [publish_tool]
+
         js_binary(
             name = "{}.publish".format(name),
             entry_point = Label("@aspect_rules_js//npm/private:npm_publish_mjs"),
             fixed_args = [
+                js_binary_tool,
                 "./$(rootpath :{})".format(name),
             ],
-            data = [name],
+            data = js_binary_data,
             # required to make npm to be available in PATH
+            # We are assuming that the publish tool will use npm under the hood
             include_npm = True,
             args = args,
             tags = kwargs.get("tags", []) + ["manual"],
