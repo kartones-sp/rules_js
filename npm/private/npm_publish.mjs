@@ -1,8 +1,8 @@
 import { spawnSync } from 'node:child_process'
 
-const restArgs = process.argv.slice(2)
+const [toolPath, packageDir, ...restArgs] = process.argv.slice(2)
 
-const spawn = spawnSync('npm', ['publish', ...restArgs], {
+const spawn = spawnSync(toolPath, ['publish', packageDir, ...restArgs], {
     stdio: 'inherit',
 })
 

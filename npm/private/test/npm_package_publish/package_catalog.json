@@ -1,0 +1,8 @@
+{
+    "name": "@mycorp/pkg-with-catalog",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "is-odd": "catalog:"
+    }
+}
