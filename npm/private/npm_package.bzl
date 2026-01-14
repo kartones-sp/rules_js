@@ -149,6 +149,7 @@ def npm_package(
         hardlink = "auto",
         publishable = False,
         publish_tool = None,
+        publish_tool_catalog = None,
         verbose = False,
         **kwargs):
     """A macro that packages sources into a directory (a tree artifact) and provides an `NpmPackageInfo`.
@@ -434,6 +435,21 @@ def npm_package(
 
             The tool must accept the same publish arguments as npm (e.g., `--tag`, `--access`, `--dry-run`).
 
+        publish_tool_catalog: Optional label of a catalog file (e.g., `pnpm-workspace.yaml`) to copy into the package directory before publishing.
+
+            This is useful when using pnpm with catalog versions (`"catalog:"` in package.json dependencies).
+            The catalog file will be copied into the package directory so pnpm can resolve catalog versions during publish.
+
+            For example, to publish with pnpm using catalog versions:
+            ```starlark
+            npm_package(
+                name = "my_pkg",
+                publishable = True,
+                publish_tool = "@pnpm//:pnpm",
+                publish_tool_catalog = "//:pnpm-workspace.yaml",
+            )
+            ```
+
         verbose: If true, prints out verbose logs to stdout
 
         **kwargs: Additional attributes such as `tags` and `visibility`
@@ -462,6 +478,10 @@ def npm_package(
             testonly = kwargs.get("testonly", False),
         )
         srcs = srcs + [files_target]
+
+    # If catalog file is provided, add it to srcs so it's included in the package
+    if publish_tool_catalog:
+        srcs = srcs + [publish_tool_catalog]
 
     if publishable:
         js_binary_data = [name]

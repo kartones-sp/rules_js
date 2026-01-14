@@ -43,6 +43,22 @@ npm_package(
     publishable = True,
 )
 
+# Test pnpm publishing with catalog versions
+npm_package(
+    name = "pkg_pnpm_catalog",
+    srcs = [
+        "index.d.ts",
+        "index.js",
+        "package_catalog.json",
+    ],
+    publish_tool = "@pnpm//:pnpm",
+    publish_tool_catalog = ":pnpm-workspace.yaml",
+    publishable = True,
+    replace_prefixes = {
+        "package_catalog.json": "package.json",
+    },
+)
+
 sh_test(
     name = "test",
     srcs = ["test.sh"],
@@ -70,6 +86,23 @@ sh_test(
     data = [
         ":pkg_pnpm.publish",
         ":pkg_pnpm_no_package_json.publish",
+    ],
+    tags = [
+        "no-remote-exec",
+        "no-sandbox",
+    ],
+)
+
+sh_test(
+    name = "test_pnpm_catalog",
+    srcs = ["test_pnpm_catalog.sh"],
+    args = [
+        "$(locations :pkg_pnpm_catalog.publish)",
+        "$(location :pkg_pnpm_catalog)",
+    ],
+    data = [
+        ":pkg_pnpm_catalog",
+        ":pkg_pnpm_catalog.publish",
     ],
     tags = [
         "no-remote-exec",
